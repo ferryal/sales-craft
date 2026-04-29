@@ -10,19 +10,19 @@ export interface AIModel {
 
 export const AI_MODELS: AIModel[] = [
     {
-        id:          'gemini-2.0-flash-exp',
-        label:       'Gemini 2.0 Flash',
-        provider:    'gemini',
-        desc:        'Fast & free — Google AI',
+        id:          'llama-3.1-8b-instant',
+        label:       'Llama 3.1 8B',
+        provider:    'groq',
+        desc:        'Fast & free — Meta via Groq',
         badge:       'free',
         icon:        'zap',
         badgeColor:  '#22C55E',
     },
     {
-        id:          'llama-3.1-8b-instant',
-        label:       'Llama 3.1 8B',
-        provider:    'groq',
-        desc:        'Fast & free — Meta via Groq',
+        id:          'gemini-2.0-flash',
+        label:       'Gemini 2.0 Flash',
+        provider:    'gemini',
+        desc:        'Fast & free — Google AI',
         badge:       'free',
         icon:        'zap',
         badgeColor:  '#22C55E',
@@ -47,4 +47,4 @@ export const AI_MODELS: AIModel[] = [
     },
 ];
 
-export const DEFAULT_MODEL = 'gemini-2.0-flash-exp';
+export const DEFAULT_MODEL = 'llama-3.1-8b-instant';

@@ -13,13 +13,13 @@ class SalesPageGeneratorService
 {
     // Maps model IDs to their provider and API model string
     private const MODEL_MAP = [
-        'gemini-2.0-flash-exp'      => ['provider' => 'gemini',    'api_model' => 'gemini-2.0-flash-exp'],
         'llama-3.1-8b-instant'      => ['provider' => 'groq',      'api_model' => 'llama-3.1-8b-instant'],
+        'gemini-2.0-flash'          => ['provider' => 'gemini',    'api_model' => 'gemini-2.0-flash'],
         'claude-haiku-4-5-20251001' => ['provider' => 'anthropic', 'api_model' => 'claude-haiku-4-5-20251001'],
         'gpt-4o-mini'               => ['provider' => 'openai',    'api_model' => 'gpt-4o-mini'],
     ];
 
-    private const DEFAULT_MODEL = 'gemini-2.0-flash-exp';
+    private const DEFAULT_MODEL = 'llama-3.1-8b-instant';
 
     public function __construct(private PromptBuilder $prompt) {}
 
