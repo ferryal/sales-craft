@@ -21,6 +21,7 @@ class GenerateSalesPageRequest extends FormRequest
             'usps'        => ['nullable', 'string', 'max:1000'],
             'tone'        => ['required', 'in:professional,casual,aggressive,luxury'],
             'price'       => ['nullable', 'string', 'max:100'],
+            'model'       => ['nullable', 'string', 'in:gemini-2.0-flash-exp,llama-3.1-8b-instant,claude-haiku-4-5-20251001,gpt-4o-mini'],
         ];
     }
 
