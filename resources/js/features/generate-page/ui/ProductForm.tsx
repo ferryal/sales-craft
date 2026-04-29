@@ -12,10 +12,6 @@ const TONE_ACTIVE: Record<string, string> = {
     professional: '#A3E635', casual: '#38BDF8', aggressive: '#EF4444', luxury: '#E2C87A',
 };
 
-const BADGE_COLORS: Record<string, string> = {
-    free: '#22C55E', cheap: '#A3E635', paid: '#71717A',
-};
-
 // ── Sub-components ────────────────────────────────────────────────────────────
 
 function SectionLabel({ children, optional = false }: { children: ReactNode; optional?: boolean }) {
@@ -184,7 +180,6 @@ function ToneCard({ tone, selected, onSelect }: { tone: { id: string; icon: stri
 function ModelCard({ model, selected, onSelect }: { model: AIModel; selected: string; onSelect: (id: string) => void }) {
     const [hov, setHov] = useState(false);
     const isSelected = selected === model.id;
-    const badgeColor = BADGE_COLORS[model.badge];
 
     return (
         <div
@@ -192,17 +187,17 @@ function ModelCard({ model, selected, onSelect }: { model: AIModel; selected: st
             onMouseEnter={() => setHov(true)} onMouseLeave={() => setHov(false)}
             style={{
                 background: '#111311', borderRadius: 8, padding: 16, cursor: 'pointer',
-                border: `1px solid ${isSelected ? badgeColor : hov ? '#3F3F46' : '#252825'}`,
-                transition: 'border-color 0.15s', position: 'relative',
+                border: `1px solid ${isSelected ? model.color : hov ? '#3F3F46' : '#252825'}`,
+                transition: 'border-color 0.15s',
             }}
         >
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
-                <Icon name={model.icon} size={18} color={isSelected ? badgeColor : '#71717A'} />
+                <Icon name={model.icon} size={18} color={isSelected ? model.color : '#71717A'} />
                 <span style={{
                     fontSize: 9, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em',
-                    color: badgeColor, background: `${badgeColor}20`, borderRadius: 4, padding: '2px 6px',
+                    color: '#22C55E', background: '#22C55E18', borderRadius: 4, padding: '2px 6px',
                 }}>
-                    {model.badge}
+                    FREE
                 </span>
             </div>
             <div style={{ fontSize: 13, fontWeight: 600, color: '#F4F4F5' }}>{model.label}</div>

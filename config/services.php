@@ -35,17 +35,21 @@ return [
         ],
     ],
 
-    // AI providers
-    'anthropic' => [
-        'key' => env('ANTHROPIC_API_KEY'),
-    ],
-
+    // AI providers — free tier
     'gemini' => [
         'key' => env('GEMINI_API_KEY'),
     ],
 
     'groq' => [
         'key' => env('GROQ_API_KEY'),
+    ],
+
+    'deepseek' => [
+        'key' => env('DEEPSEEK_API_KEY'),
+    ],
+
+    'qwen' => [
+        'key' => env('QWEN_API_KEY'),
     ],
 
 ];

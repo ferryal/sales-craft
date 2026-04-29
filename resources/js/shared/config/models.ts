@@ -1,49 +1,44 @@
 export interface AIModel {
     id: string;
     label: string;
-    provider: 'gemini' | 'groq' | 'anthropic' | 'openai';
+    provider: 'gemini' | 'groq' | 'deepseek' | 'qwen';
     desc: string;
-    badge: 'free' | 'cheap' | 'paid';
     icon: string;
-    badgeColor: string;
+    color: string;
 }
 
 export const AI_MODELS: AIModel[] = [
     {
-        id:          'llama-3.1-8b-instant',
-        label:       'Llama 3.1 8B',
-        provider:    'groq',
-        desc:        'Fast & free — Meta via Groq',
-        badge:       'free',
-        icon:        'zap',
-        badgeColor:  '#22C55E',
+        id:       'llama-3.1-8b-instant',
+        label:    'Llama 3.1 8B',
+        provider: 'groq',
+        desc:     'Meta · Fast · Free',
+        icon:     'zap',
+        color:    '#22C55E',
     },
     {
-        id:          'gemini-2.0-flash',
-        label:       'Gemini 2.0 Flash',
-        provider:    'gemini',
-        desc:        'Fast & free — Google AI',
-        badge:       'free',
-        icon:        'zap',
-        badgeColor:  '#22C55E',
+        id:       'gemini-2.5-flash',
+        label:    'Gemini 2.5 Flash',
+        provider: 'gemini',
+        desc:     'Google · Smart · Free',
+        icon:     'diamond',
+        color:    '#38BDF8',
     },
     {
-        id:          'claude-haiku-4-5-20251001',
-        label:       'Claude Haiku',
-        provider:    'anthropic',
-        desc:        'High quality — Anthropic',
-        badge:       'cheap',
-        icon:        'diamond',
-        badgeColor:  '#A3E635',
+        id:       'deepseek-chat',
+        label:    'DeepSeek V3',
+        provider: 'deepseek',
+        desc:     'DeepSeek · Sharp · Free',
+        icon:     'zap',
+        color:    '#A3E635',
     },
     {
-        id:          'gpt-4o-mini',
-        label:       'GPT-4o Mini',
-        provider:    'openai',
-        desc:        'Reliable — OpenAI',
-        badge:       'paid',
-        icon:        'briefcase',
-        badgeColor:  '#71717A',
+        id:       'qwen-turbo',
+        label:    'Qwen Turbo',
+        provider: 'qwen',
+        desc:     'Alibaba · Capable · Free',
+        icon:     'zap',
+        color:    '#F59E0B',
     },
 ];
 

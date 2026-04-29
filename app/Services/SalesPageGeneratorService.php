@@ -7,16 +7,13 @@ use App\Models\SalesPage;
 use App\Models\User;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
-use OpenAI\Laravel\Facades\OpenAI;
-
 class SalesPageGeneratorService
 {
-    // Maps model IDs to their provider and API model string
     private const MODEL_MAP = [
-        'llama-3.1-8b-instant'      => ['provider' => 'groq',      'api_model' => 'llama-3.1-8b-instant'],
-        'gemini-2.0-flash'          => ['provider' => 'gemini',    'api_model' => 'gemini-2.0-flash'],
-        'claude-haiku-4-5-20251001' => ['provider' => 'anthropic', 'api_model' => 'claude-haiku-4-5-20251001'],
-        'gpt-4o-mini'               => ['provider' => 'openai',    'api_model' => 'gpt-4o-mini'],
+        'llama-3.1-8b-instant' => ['provider' => 'groq',     'api_model' => 'llama-3.1-8b-instant'],
+        'gemini-2.5-flash'     => ['provider' => 'gemini',   'api_model' => 'gemini-2.5-flash'],
+        'deepseek-chat'        => ['provider' => 'deepseek', 'api_model' => 'deepseek-chat'],
+        'qwen-turbo'           => ['provider' => 'qwen',     'api_model' => 'qwen-turbo'],
     ];
 
     private const DEFAULT_MODEL = 'llama-3.1-8b-instant';
@@ -72,11 +69,11 @@ class SalesPageGeneratorService
         $modelDef = self::MODEL_MAP[$modelId] ?? self::MODEL_MAP[self::DEFAULT_MODEL];
 
         return match ($modelDef['provider']) {
-            'gemini'    => $this->callGemini($modelDef['api_model'], $input),
-            'groq'      => $this->callGroq($modelDef['api_model'], $input),
-            'anthropic' => $this->callAnthropic($modelDef['api_model'], $input),
-            'openai'    => $this->callOpenAI($modelDef['api_model'], $input),
-            default     => throw new GenerationException("Unknown AI provider for model: {$modelId}"),
+            'gemini'   => $this->callGemini($modelDef['api_model'], $input),
+            'groq'     => $this->callOpenAICompat('https://api.groq.com/openai/v1/chat/completions',   config('services.groq.key'),     'GROQ_API_KEY',     $modelDef['api_model'], $input),
+            'deepseek' => $this->callOpenAICompat('https://api.deepseek.com/v1/chat/completions',      config('services.deepseek.key'), 'DEEPSEEK_API_KEY', $modelDef['api_model'], $input),
+            'qwen'     => $this->callOpenAICompat('https://dashscope-intl.aliyuncs.com/compatible-mode/v1/chat/completions', config('services.qwen.key'), 'QWEN_API_KEY', $modelDef['api_model'], $input),
+            default    => throw new GenerationException("Unknown provider for model: {$modelId}"),
         };
     }
 
@@ -116,18 +113,17 @@ class SalesPageGeneratorService
         return $this->decodeJson($text);
     }
 
-    // ── Groq (Llama / OpenAI-compatible) ──────────────────────────────────────
+    // ── OpenAI-compatible (Groq / DeepSeek / Qwen) ───────────────────────────
 
-    private function callGroq(string $model, array $input): array
+    private function callOpenAICompat(string $endpoint, ?string $key, string $envVar, string $model, array $input): array
     {
-        $key = config('services.groq.key');
         if (empty($key)) {
-            throw new GenerationException('Groq API key not configured. Set GROQ_API_KEY in .env.');
+            throw new GenerationException("API key not configured. Set {$envVar} in .env.");
         }
 
         $response = Http::withToken($key)
             ->timeout(30)
-            ->post('https://api.groq.com/openai/v1/chat/completions', [
+            ->post($endpoint, [
                 'model'           => $model,
                 'messages'        => [
                     ['role' => 'system', 'content' => $this->prompt->systemPrompt()],
@@ -139,93 +135,15 @@ class SalesPageGeneratorService
             ]);
 
         if ($response->status() === 429) {
-            throw new GenerationException('Groq rate limit hit. Please try again in a moment.');
+            throw new GenerationException('Rate limit reached. Please try again in a moment.');
         }
         if ($response->failed()) {
             $error = $response->json('error.message') ?? "HTTP {$response->status()}";
-            throw new GenerationException("Groq error: {$error}");
+            throw new GenerationException("AI error ({$model}): {$error}");
         }
 
         $text = $response->json('choices.0.message.content') ?? '';
         return $this->decodeJson($text);
-    }
-
-    // ── Anthropic Claude ──────────────────────────────────────────────────────
-
-    private function callAnthropic(string $model, array $input): array
-    {
-        $key = config('services.anthropic.key');
-        if (empty($key)) {
-            throw new GenerationException('Anthropic API key not configured. Set ANTHROPIC_API_KEY in .env.');
-        }
-
-        $response = Http::withHeaders([
-            'x-api-key'         => $key,
-            'anthropic-version' => '2023-06-01',
-            'content-type'      => 'application/json',
-        ])->timeout(30)->post('https://api.anthropic.com/v1/messages', [
-            'model'      => $model,
-            'max_tokens' => 2000,
-            'system'     => $this->prompt->systemPrompt(),
-            'messages'   => [
-                ['role' => 'user',      'content' => $this->prompt->userPrompt($input)],
-                ['role' => 'assistant', 'content' => '{'],  // prefill → forces JSON
-            ],
-        ]);
-
-        if ($response->status() === 429) {
-            throw new GenerationException('Claude is busy. Please try again in a moment.');
-        }
-        if ($response->failed()) {
-            $error = $response->json('error.message') ?? "HTTP {$response->status()}";
-            throw new GenerationException("Anthropic error: {$error}");
-        }
-
-        // Anthropic returns completion after prefill — prepend '{'
-        $text = '{' . ($response->json('content.0.text') ?? '');
-        return $this->decodeJson($text);
-    }
-
-    // ── OpenAI ────────────────────────────────────────────────────────────────
-
-    private function callOpenAI(string $model, array $input): array
-    {
-        $retries    = 0;
-        $maxRetries = 1;
-
-        while ($retries <= $maxRetries) {
-            try {
-                $response = OpenAI::chat()->create([
-                    'model'           => $model,
-                    'messages'        => [
-                        ['role' => 'system', 'content' => $this->prompt->systemPrompt()],
-                        ['role' => 'user',   'content' => $this->prompt->userPrompt($input)],
-                    ],
-                    'temperature'     => 0.7,
-                    'max_tokens'      => 2000,
-                    'response_format' => ['type' => 'json_object'],
-                ]);
-
-                return $this->decodeJson($response->choices[0]->message->content);
-
-            } catch (\RuntimeException $e) {
-                $retries++;
-                if ($retries > $maxRetries) {
-                    throw new GenerationException('AI returned an invalid response. Please try again.');
-                }
-            } catch (\Exception $e) {
-                $msg = $e->getMessage();
-                if (str_contains($msg, '429') || str_contains($msg, 'rate limit')) {
-                    throw new GenerationException('OpenAI is busy. Please try again in a moment.');
-                }
-                if (str_contains($msg, 'timeout') || str_contains($msg, 'timed out')) {
-                    throw new GenerationException('OpenAI timed out. Please try again.');
-                }
-                throw $e;
-            }
-        }
-
-        throw new GenerationException('Generation failed after retries.');
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────────
