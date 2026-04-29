@@ -2,22 +2,32 @@ import { useForm, router } from '@inertiajs/react';
 import AppLayout from '@/widgets/AppLayout/AppLayout';
 import ProductForm from '@/features/generate-page/ui/ProductForm';
 import Icon from '@/shared/icons/Icon';
+import { DEFAULT_MODEL } from '@/shared/config/models';
 
-export default function Generate({ prefill }) {
+interface Prefill {
+    name?: string;
+    description?: string;
+    features?: string[];
+    audience?: string;
+    usps?: string;
+    tone?: string;
+    price?: string;
+    model?: string;
+}
+
+export default function Generate({ prefill }: { prefill?: Prefill }) {
     const { data, setData, post, processing, errors } = useForm({
-        name:        prefill?.name        || '',
-        description: prefill?.description || '',
-        features:    prefill?.features    || [],
-        audience:    prefill?.audience    || '',
-        usps:        prefill?.usps        || '',
-        tone:        prefill?.tone        || 'professional',
-        price:       prefill?.price       || '',
+        name:        prefill?.name        ?? '',
+        description: prefill?.description ?? '',
+        features:    prefill?.features    ?? [] as string[],
+        audience:    prefill?.audience    ?? '',
+        usps:        prefill?.usps        ?? '',
+        tone:        prefill?.tone        ?? 'professional',
+        price:       prefill?.price       ?? '',
+        model:       prefill?.model       ?? DEFAULT_MODEL,
     });
 
-    const handleSubmit = () => {
-        // Serialize features array to comma-separated string for the backend
-        post('/generate');
-    };
+    const handleSubmit = () => post('/generate');
 
     return (
         <AppLayout activePage="generate">

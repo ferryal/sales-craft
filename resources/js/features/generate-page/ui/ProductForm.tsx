@@ -1,13 +1,24 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, type ReactNode, type ChangeEvent } from 'react';
 import Icon from '@/shared/icons/Icon';
 import { TONES } from '@/shared/config/tones';
+import { AI_MODELS, type AIModel } from '@/shared/config/models';
 
 const STATUS_MESSAGES = [
     'Crafting headline…', 'Writing benefits…',
     'Building feature list…', 'Finalizing CTA…', 'Polishing copy…',
 ];
 
-function SectionLabel({ children, optional }) {
+const TONE_ACTIVE: Record<string, string> = {
+    professional: '#A3E635', casual: '#38BDF8', aggressive: '#EF4444', luxury: '#E2C87A',
+};
+
+const BADGE_COLORS: Record<string, string> = {
+    free: '#22C55E', cheap: '#A3E635', paid: '#71717A',
+};
+
+// ── Sub-components ────────────────────────────────────────────────────────────
+
+function SectionLabel({ children, optional = false }: { children: ReactNode; optional?: boolean }) {
     return (
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
             <div style={{ width: 2, height: 16, background: '#A3E635', borderRadius: 1, flexShrink: 0 }} />
@@ -23,7 +34,10 @@ function SectionLabel({ children, optional }) {
     );
 }
 
-function FormInput({ label, helper, value, onChange, placeholder, type = 'text', name }) {
+function FormInput({ label, helper, value, onChange, placeholder, type = 'text', name }: {
+    label?: string; helper?: string; value: string; onChange: (e: ChangeEvent<HTMLInputElement>) => void;
+    placeholder?: string; type?: string; name: string;
+}) {
     const [focused, setFocused] = useState(false);
     return (
         <div>
@@ -49,7 +63,10 @@ function FormInput({ label, helper, value, onChange, placeholder, type = 'text',
     );
 }
 
-function FormTextarea({ label, value, onChange, rows = 5, maxLen, name }) {
+function FormTextarea({ label, value, onChange, rows = 5, maxLen, name }: {
+    label?: string; value: string; onChange: (e: ChangeEvent<HTMLTextAreaElement>) => void;
+    rows?: number; maxLen?: number; name: string;
+}) {
     const [focused, setFocused] = useState(false);
     return (
         <div>
@@ -83,17 +100,17 @@ function FormTextarea({ label, value, onChange, rows = 5, maxLen, name }) {
     );
 }
 
-function TagInput({ tags, onChange }) {
+function TagInput({ tags, onChange }: { tags: string[]; onChange: (tags: string[]) => void }) {
     const [input, setInput] = useState('');
     const [focused, setFocused] = useState(false);
-    const inputRef = useRef(null);
+    const inputRef = useRef<HTMLInputElement>(null);
 
     const addTag = () => {
         const v = input.trim().replace(/,$/, '');
         if (v && !tags.includes(v) && tags.length < 10) { onChange([...tags, v]); setInput(''); }
     };
-    const removeTag = t => onChange(tags.filter(x => x !== t));
-    const handleKey = e => {
+    const removeTag = (t: string) => onChange(tags.filter(x => x !== t));
+    const handleKey = (e: React.KeyboardEvent) => {
         if (e.key === 'Enter' || e.key === ',') { e.preventDefault(); addTag(); }
         if (e.key === 'Backspace' && !input && tags.length) removeTag(tags[tags.length - 1]);
     };
@@ -142,12 +159,10 @@ function TagInput({ tags, onChange }) {
     );
 }
 
-const TONE_ACTIVE = { professional: '#A3E635', casual: '#38BDF8', aggressive: '#EF4444', luxury: '#E2C87A' };
-
-function ToneCard({ tone, selected, onSelect }) {
+function ToneCard({ tone, selected, onSelect }: { tone: { id: string; icon: string; label: string; desc: string }; selected: string; onSelect: (id: string) => void }) {
     const [hov, setHov] = useState(false);
     const isSelected = selected === tone.id;
-    const activeColor = TONE_ACTIVE[tone.id];
+    const activeColor = TONE_ACTIVE[tone.id] ?? '#A3E635';
 
     return (
         <div
@@ -166,16 +181,66 @@ function ToneCard({ tone, selected, onSelect }) {
     );
 }
 
-export default function ProductForm({ data, setData, onSubmit, processing, errors }) {
+function ModelCard({ model, selected, onSelect }: { model: AIModel; selected: string; onSelect: (id: string) => void }) {
+    const [hov, setHov] = useState(false);
+    const isSelected = selected === model.id;
+    const badgeColor = BADGE_COLORS[model.badge];
+
+    return (
+        <div
+            onClick={() => onSelect(model.id)}
+            onMouseEnter={() => setHov(true)} onMouseLeave={() => setHov(false)}
+            style={{
+                background: '#111311', borderRadius: 8, padding: 16, cursor: 'pointer',
+                border: `1px solid ${isSelected ? badgeColor : hov ? '#3F3F46' : '#252825'}`,
+                transition: 'border-color 0.15s', position: 'relative',
+            }}
+        >
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+                <Icon name={model.icon} size={18} color={isSelected ? badgeColor : '#71717A'} />
+                <span style={{
+                    fontSize: 9, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em',
+                    color: badgeColor, background: `${badgeColor}20`, borderRadius: 4, padding: '2px 6px',
+                }}>
+                    {model.badge}
+                </span>
+            </div>
+            <div style={{ fontSize: 13, fontWeight: 600, color: '#F4F4F5' }}>{model.label}</div>
+            <div style={{ fontSize: 11, color: '#71717A', marginTop: 3 }}>{model.desc}</div>
+        </div>
+    );
+}
+
+// ── Main form ─────────────────────────────────────────────────────────────────
+
+interface FormData {
+    name: string;
+    description: string;
+    features: string[];
+    audience: string;
+    usps: string;
+    tone: string;
+    price: string;
+    model: string;
+}
+
+export default function ProductForm({ data, setData, onSubmit, processing, errors }: {
+    data: FormData;
+    setData: (key: string, value: string | string[]) => void;
+    onSubmit: () => void;
+    processing: boolean;
+    errors: Partial<Record<string, string>>;
+}) {
     const [statusIdx, setStatusIdx] = useState(0);
     const [progress, setProgress] = useState(0);
 
-    const handleSubmit = e => {
+    const selectedModel = AI_MODELS.find(m => m.id === data.model) ?? AI_MODELS[0];
+
+    const handleSubmit = (e: React.SyntheticEvent) => {
         e.preventDefault();
         onSubmit();
     };
 
-    // Animate progress while processing
     useEffect(() => {
         if (!processing) { setProgress(0); setStatusIdx(0); return; }
         let p = 0;
@@ -201,15 +266,19 @@ export default function ProductForm({ data, setData, onSubmit, processing, error
                     </p>
                 </div>
 
-                {/* Rate limit / concurrent error */}
+                {/* Errors */}
                 {(errors.rate_limit || errors.concurrent || errors.generation) && (
                     <div style={{ marginBottom: 20, padding: '12px 16px', background: '#181A18', border: '1px solid #EF4444', borderRadius: 8, display: 'flex', gap: 10, alignItems: 'flex-start' }}>
-                        <Icon name="alert-circle" size={18} color="#EF4444" style={{ flexShrink: 0, marginTop: 1 }} />
-                        <span style={{ fontSize: 13, color: '#F4F4F5' }}>{errors.rate_limit || errors.concurrent || errors.generation}</span>
+                        <Icon name="alert-circle" size={18} color="#EF4444" />
+                        <span style={{ fontSize: 13, color: '#F4F4F5' }}>
+                            {errors.rate_limit ?? errors.concurrent ?? errors.generation}
+                        </span>
                     </div>
                 )}
 
                 <form onSubmit={handleSubmit}>
+
+                    {/* Product */}
                     <div style={{ marginBottom: 28 }}>
                         <SectionLabel>Product</SectionLabel>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
@@ -222,6 +291,7 @@ export default function ProductForm({ data, setData, onSubmit, processing, error
                         </div>
                     </div>
 
+                    {/* Audience */}
                     <div style={{ marginBottom: 28 }}>
                         <SectionLabel>Audience</SectionLabel>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
@@ -239,6 +309,7 @@ export default function ProductForm({ data, setData, onSubmit, processing, error
                         </div>
                     </div>
 
+                    {/* Tone */}
                     <div style={{ marginBottom: 28 }}>
                         <SectionLabel>Tone</SectionLabel>
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
@@ -248,6 +319,20 @@ export default function ProductForm({ data, setData, onSubmit, processing, error
                         </div>
                     </div>
 
+                    {/* AI Model */}
+                    <div style={{ marginBottom: 28 }}>
+                        <SectionLabel>AI Model</SectionLabel>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+                            {AI_MODELS.map(m => (
+                                <ModelCard key={m.id} model={m} selected={data.model} onSelect={v => setData('model', v)} />
+                            ))}
+                        </div>
+                        <p style={{ fontSize: 11, color: '#71717A', marginTop: 10 }}>
+                            ✦ Free models require a free API key — see README for setup.
+                        </p>
+                    </div>
+
+                    {/* Pricing */}
                     <div style={{ marginBottom: 32 }}>
                         <SectionLabel optional>Pricing</SectionLabel>
                         <div style={{ display: 'flex', height: 50, borderRadius: 6, overflow: 'hidden', border: '1px solid #252825' }}>
@@ -260,6 +345,7 @@ export default function ProductForm({ data, setData, onSubmit, processing, error
                         </div>
                     </div>
 
+                    {/* Submit */}
                     <div>
                         {processing && (
                             <div style={{ height: 3, background: '#252825', borderRadius: 2, marginBottom: 12, overflow: 'hidden' }}>
@@ -279,7 +365,9 @@ export default function ProductForm({ data, setData, onSubmit, processing, error
                                 : 'Generate Sales Page →'
                             }
                         </button>
-                        <p style={{ fontSize: 12, color: '#71717A', textAlign: 'center', marginTop: 10 }}>⚡ ~8 seconds · GPT-4o</p>
+                        <p style={{ fontSize: 12, color: '#71717A', textAlign: 'center', marginTop: 10 }}>
+                            ⚡ via {selectedModel.label} · ~8–15 seconds
+                        </p>
                     </div>
                 </form>
             </div>
