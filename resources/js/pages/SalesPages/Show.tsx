@@ -8,7 +8,28 @@ import Icon from '@/shared/icons/Icon';
 import { TONE_META } from '@/shared/config/tones';
 import { formatDate } from '@/shared/lib/utils';
 
-function SidebarBtn({ icon, label, danger, onClick }) {
+interface SalesPageOutput {
+    headline: string;
+    sub_headline: string;
+    description: string;
+    benefits: string[];
+    features: { title: string; description: string }[];
+    testimonials: { name: string; role: string; quote: string }[];
+    pricing: { price: string; billing: string; cta_text: string; urgency: string };
+    cta: { button_text: string; supporting_text: string };
+}
+
+interface SalesPage {
+    id: number;
+    title: string;
+    tone: string;
+    status: string;
+    created_at: string;
+    output_data: SalesPageOutput;
+    input_data: Record<string, unknown>;
+}
+
+function SidebarBtn({ icon, label, danger = false, onClick }: { icon: string; label: string; danger?: boolean; onClick: () => void }) {
     const [h, setH] = useState(false);
     return (
         <button
@@ -29,19 +50,32 @@ function SidebarBtn({ icon, label, danger, onClick }) {
     );
 }
 
-export default function SalesPagesShow({ page }) {
-    const [device, setDevice] = useState('desktop');
+function CopyBtn({ text, label, icon }: { text: string; label: string; icon: string }) {
     const [copied, setCopied] = useState(false);
-    const [sidebarOpen, setSidebarOpen] = useState(true);
-    const [showDelete, setShowDelete] = useState(false);
-
-    const tone = TONE_META[page.tone] || TONE_META.professional;
-
     const handleCopy = () => {
-        navigator.clipboard.writeText(`${window.location.origin}/preview/${page.id}`);
+        navigator.clipboard.writeText(text);
         setCopied(true);
         setTimeout(() => setCopied(false), 2000);
     };
+    return (
+        <button onClick={handleCopy} style={{
+            background: 'none', border: 'none', cursor: 'pointer',
+            display: 'inline-flex', alignItems: 'center', gap: 8,
+            color: copied ? '#A3E635' : '#71717A', fontSize: 13,
+            padding: '8px 0', fontFamily: 'Inter, sans-serif', transition: 'color 0.15s',
+        }}>
+            <Icon name={copied ? 'check-circle' : icon} size={16} color={copied ? '#A3E635' : '#71717A'} />
+            {copied ? 'Copied!' : label}
+        </button>
+    );
+}
+
+export default function SalesPagesShow({ page }: { page: SalesPage }) {
+    const [device, setDevice] = useState('desktop');
+    const [sidebarOpen, setSidebarOpen] = useState(true);
+    const [showDelete, setShowDelete] = useState(false);
+
+    const tone = TONE_META[page.tone as keyof typeof TONE_META] || TONE_META.professional;
 
     const handleDelete = () => {
         router.delete(`/pages/${page.id}`, { onSuccess: () => router.visit('/pages') });
@@ -72,15 +106,22 @@ export default function SalesPagesShow({ page }) {
                         <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                             <SidebarBtn icon="refresh" label="Re-generate" onClick={() => router.visit(`/pages/${page.id}/edit`)} />
                             <ExportButton pageId={page.id} />
-                            <button onClick={handleCopy} style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 8, color: copied ? '#A3E635' : '#71717A', fontSize: 13, padding: '8px 0', fontFamily: 'Inter, sans-serif', transition: 'color 0.15s' }}>
-                                <Icon name="link" size={16} color={copied ? '#A3E635' : '#71717A'} />
-                                {copied ? 'Copied!' : 'Copy preview link'}
-                            </button>
-                            <button onClick={() => setShowDelete(true)} style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 8, color: '#71717A', fontSize: 13, padding: '8px 0', fontFamily: 'Inter, sans-serif', transition: 'color 0.15s' }}
-                                onMouseEnter={e => e.currentTarget.style.color = '#EF4444'}
-                                onMouseLeave={e => e.currentTarget.style.color = '#71717A'}>
-                                <Icon name="trash" size={16} color="currentColor" /> Delete
-                            </button>
+
+                            {/* F5: Copy headline to clipboard */}
+                            <CopyBtn
+                                text={page.output_data?.headline ?? ''}
+                                label="Copy headline"
+                                icon="rhombus"
+                            />
+
+                            {/* Copy public preview link */}
+                            <CopyBtn
+                                text={`${window.location.origin}/preview/${page.id}`}
+                                label="Copy preview link"
+                                icon="link"
+                            />
+
+                            <SidebarBtn icon="trash" label="Delete" danger onClick={() => setShowDelete(true)} />
                         </div>
 
                         <div style={{ flex: 1 }} />
@@ -107,9 +148,14 @@ export default function SalesPagesShow({ page }) {
                                 </button>
                             ))}
                         </div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                            <span style={{ fontSize: 12, color: '#71717A' }}>100%</span>
-                        </div>
+                        <a
+                            href={`/preview/${page.id}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            style={{ fontSize: 12, color: '#71717A', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 4 }}
+                        >
+                            <Icon name="eye" size={14} color="#71717A" /> Full page
+                        </a>
                     </div>
 
                     {/* Browser chrome */}
@@ -117,8 +163,10 @@ export default function SalesPagesShow({ page }) {
                         <div style={{ display: 'flex', gap: 6 }}>
                             {['#EF4444','#F59E0B','#22C55E'].map(c => <div key={c} style={{ width: 8, height: 8, borderRadius: '50%', background: c }} />)}
                         </div>
-                        <div style={{ flex: 1, maxWidth: 360, height: 22, background: '#111311', border: '1px solid #252825', borderRadius: 4, display: 'flex', alignItems: 'center', padding: '0 10px' }}>
-                            <span style={{ fontSize: 11, color: '#71717A' }}>{window.location.origin}/preview/{page.id}</span>
+                        <div style={{ flex: 1, maxWidth: 360, height: 22, background: '#111311', border: '1px solid #252825', borderRadius: 4, display: 'flex', alignItems: 'center', padding: '0 10px', overflow: 'hidden' }}>
+                            <span style={{ fontSize: 11, color: '#71717A', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                {window.location.origin}/preview/{page.id}
+                            </span>
                         </div>
                     </div>
 
