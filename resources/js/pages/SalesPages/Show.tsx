@@ -173,7 +173,7 @@ export default function SalesPagesShow({ page }: { page: SalesPage }) {
                     {/* Content */}
                     <div style={{ flex: 1, overflowY: 'auto', display: 'flex', justifyContent: 'center', padding: device === 'mobile' ? '24px 0' : 0, background: device === 'mobile' ? '#0D0E0D' : '#111311' }}>
                         <div style={{ width: device === 'mobile' ? 390 : '100%', maxWidth: '100%', boxShadow: device === 'mobile' ? '0 0 0 1px #252825' : 'none' }}>
-                            <SalesPagePreview data={page.output_data} />
+                            <SalesPagePreview data={page.output_data} template={(page.input_data?.template as string) ?? 'dark'} />
                         </div>
                     </div>
                 </div>

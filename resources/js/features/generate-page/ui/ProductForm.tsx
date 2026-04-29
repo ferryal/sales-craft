@@ -2,6 +2,7 @@ import { useState, useRef, useEffect, type ReactNode, type ChangeEvent } from 'r
 import Icon from '@/shared/icons/Icon';
 import { TONES } from '@/shared/config/tones';
 import { AI_MODELS, type AIModel } from '@/shared/config/models';
+import { TEMPLATES, type Template } from '@/shared/config/templates';
 
 const STATUS_MESSAGES = [
     'Crafting headline…', 'Writing benefits…',
@@ -208,6 +209,35 @@ function ModelCard({ model, selected, onSelect }: { model: AIModel; selected: st
 
 // ── Main form ─────────────────────────────────────────────────────────────────
 
+function TemplateCard({ tmpl, selected, onSelect }: { tmpl: Template; selected: string; onSelect: (id: string) => void }) {
+    const [hov, setHov] = useState(false);
+    const isSelected = selected === tmpl.id;
+    const [c1, c2, c3] = tmpl.preview;
+
+    return (
+        <div
+            onClick={() => onSelect(tmpl.id)}
+            onMouseEnter={() => setHov(true)} onMouseLeave={() => setHov(false)}
+            style={{
+                background: '#111311', borderRadius: 8, padding: 14, cursor: 'pointer',
+                border: `1px solid ${isSelected ? '#A3E635' : hov ? '#3F3F46' : '#252825'}`,
+                transition: 'border-color 0.15s', display: 'flex', alignItems: 'center', gap: 12,
+            }}
+        >
+            {/* Mini color swatch */}
+            <div style={{ display: 'flex', gap: 3, flexShrink: 0 }}>
+                {[c1, c2, c3].map((c, i) => (
+                    <div key={i} style={{ width: 14, height: 14, borderRadius: 3, background: c, border: '1px solid rgba(255,255,255,0.08)' }} />
+                ))}
+            </div>
+            <div>
+                <div style={{ fontSize: 13, fontWeight: 600, color: '#F4F4F5' }}>{tmpl.label}</div>
+                <div style={{ fontSize: 11, color: '#71717A', marginTop: 1 }}>{tmpl.desc}</div>
+            </div>
+        </div>
+    );
+}
+
 interface FormData {
     name: string;
     description: string;
@@ -217,6 +247,7 @@ interface FormData {
     tone: string;
     price: string;
     model: string;
+    template: string;
 }
 
 export default function ProductForm({ data, setData, onSubmit, processing, errors }: {
@@ -325,6 +356,21 @@ export default function ProductForm({ data, setData, onSubmit, processing, error
                         <p style={{ fontSize: 11, color: '#71717A', marginTop: 10 }}>
                             ✦ Free models require a free API key — see README for setup.
                         </p>
+                    </div>
+
+                    {/* Design Template */}
+                    <div style={{ marginBottom: 28 }}>
+                        <SectionLabel>Design Template</SectionLabel>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                            {TEMPLATES.map(tmpl => (
+                                <TemplateCard
+                                    key={tmpl.id}
+                                    tmpl={tmpl}
+                                    selected={data.template}
+                                    onSelect={v => setData('template', v)}
+                                />
+                            ))}
+                        </div>
                     </div>
 
                     {/* Pricing */}

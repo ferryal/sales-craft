@@ -3,6 +3,7 @@ import AppLayout from '@/widgets/AppLayout/AppLayout';
 import ProductForm from '@/features/generate-page/ui/ProductForm';
 import Icon from '@/shared/icons/Icon';
 import { DEFAULT_MODEL } from '@/shared/config/models';
+import { DEFAULT_TEMPLATE } from '@/shared/config/templates';
 
 interface Prefill {
     name?: string;
@@ -13,6 +14,7 @@ interface Prefill {
     tone?: string;
     price?: string;
     model?: string;
+    template?: string;
 }
 
 export default function Generate({ prefill }: { prefill?: Prefill }) {
@@ -25,6 +27,7 @@ export default function Generate({ prefill }: { prefill?: Prefill }) {
         tone:        prefill?.tone        ?? 'professional',
         price:       prefill?.price       ?? '',
         model:       prefill?.model       ?? DEFAULT_MODEL,
+        template:    prefill?.template    ?? DEFAULT_TEMPLATE,
     });
 
     const handleSubmit = () => post('/generate');
