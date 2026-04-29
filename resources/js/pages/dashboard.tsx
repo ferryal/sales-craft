@@ -1,14 +1,34 @@
 import { useState } from 'react';
-import { router } from '@inertiajs/react';
+import { router, usePage } from '@inertiajs/react';
 import AppLayout from '@/widgets/AppLayout/AppLayout';
 import PageCard from '@/widgets/PageCard/PageCard';
 import DeleteModal from '@/features/delete-page/ui/DeleteModal';
 import Icon from '@/shared/icons/Icon';
 import { formatDate } from '@/shared/lib/utils';
 
+interface SalesPageSummary {
+    id: number;
+    title: string;
+    tone: string;
+    status: string;
+    created_at: string;
+    date?: string;
+}
+
+interface DashboardStats {
+    total: number;
+    this_month: number;
+    this_week: number;
+}
+
+interface SharedProps {
+    auth: { user: { name: string } };
+    [key: string]: unknown;
+}
+
 function Sparkline({ color = '#A3E635' }) {
     const pts = [0,4,2,8,5,3,8,7,10,4,13,9,16,5,19,8,22,3,25,6,28,2,32,7];
-    const pairs = [];
+    const pairs: number[][] = [];
     for (let i = 0; i < pts.length; i += 2) pairs.push([pts[i], pts[i+1]]);
     const d = pairs.map((p, i) => `${i === 0 ? 'M' : 'L'}${p[0]},${10 - p[1]}`).join(' ');
     return (
@@ -18,8 +38,11 @@ function Sparkline({ color = '#A3E635' }) {
     );
 }
 
-export default function Dashboard({ recentPages, stats }) {
-    const [deleteTarget, setDeleteTarget] = useState(null);
+export default function Dashboard({ recentPages, stats }: { recentPages: SalesPageSummary[]; stats: DashboardStats }) {
+    const { auth } = usePage<SharedProps>().props;
+    const firstName = auth.user.name.split(' ')[0];
+
+    const [deleteTarget, setDeleteTarget] = useState<SalesPageSummary | null>(null);
 
     const handleDelete = () => {
         if (!deleteTarget) return;
@@ -38,18 +61,18 @@ export default function Dashboard({ recentPages, stats }) {
             <div style={{ flex: 1, overflowY: 'auto', padding: 32 }}>
 
                 <div style={{ fontFamily: 'Space Grotesk, sans-serif', fontSize: 22, fontWeight: 700, color: '#F4F4F5', letterSpacing: '-0.3px' }}>
-                    Good morning, Ferry.
+                    Good to see you, {firstName}.
                 </div>
                 <div style={{ fontSize: 13, color: '#71717A', marginTop: 4 }}>Here's your activity at a glance.</div>
 
                 {/* Stats */}
-                <div style={{ display: 'flex', gap: 12, marginTop: 24 }}>
+                <div style={{ display: 'flex', gap: 12, marginTop: 24, flexWrap: 'wrap' }}>
                     {[
-                        { icon: 'file',     label: 'Total Pages',  value: stats?.total || 0,   sub: `+${stats?.this_week || 0} this week`, subColor: '#22C55E' },
-                        { icon: 'calendar', label: 'This Month',   value: stats?.this_month || 0, sparkline: true },
-                        { icon: 'zap',      label: 'Avg. Speed',   value: '8.2s', badge: true },
+                        { icon: 'file',     label: 'Total Pages',  value: stats?.total || 0,        sub: `+${stats?.this_week || 0} this week`, subColor: '#22C55E' },
+                        { icon: 'calendar', label: 'This Month',   value: stats?.this_month || 0,   sparkline: true },
+                        { icon: 'zap',      label: 'Avg. Speed',   value: '~8s',                    badge: true },
                     ].map(card => (
-                        <div key={card.label} style={{ background: '#111311', border: '1px solid #252825', borderRadius: 8, padding: 20, flex: 1 }}>
+                        <div key={card.label} style={{ background: '#111311', border: '1px solid #252825', borderRadius: 8, padding: 20, flex: '1 1 140px', minWidth: 140 }}>
                             <Icon name={card.icon} size={20} color="#A3E635" />
                             <div style={{ fontSize: 11, fontWeight: 500, color: '#71717A', textTransform: 'uppercase', letterSpacing: '0.09em', marginTop: 14, marginBottom: 4 }}>{card.label}</div>
                             <div style={{ fontFamily: 'Space Grotesk, sans-serif', fontSize: 32, fontWeight: 700, color: '#F4F4F5', lineHeight: 1 }}>{card.value}</div>
@@ -81,7 +104,7 @@ export default function Dashboard({ recentPages, stats }) {
                             </button>
                         </div>
                     ) : (
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 12 }}>
+                        <div className="responsive-grid">
                             {formatted.map(page => (
                                 <PageCard key={page.id} page={page}
                                     onPreview={() => router.visit(`/pages/${page.id}`)}
