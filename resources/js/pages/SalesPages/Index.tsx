@@ -8,13 +8,24 @@ import Icon from '@/shared/icons/Icon';
 import { TONE_META } from '@/shared/config/tones';
 import { formatDate } from '@/shared/lib/utils';
 
-export default function SalesPagesIndex({ pages: initialPages }) {
-    const [pages, setPages] = useState(
+interface SalesPageSummary {
+    id: number;
+    title: string;
+    tone: string;
+    status: string;
+    created_at: string;
+    date?: string;
+}
+
+type ToneKey = keyof typeof TONE_META;
+
+export default function SalesPagesIndex({ pages: initialPages }: { pages: SalesPageSummary[] }) {
+    const [pages, setPages] = useState<SalesPageSummary[]>(
         (initialPages || []).map(p => ({ ...p, date: formatDate(p.created_at) }))
     );
     const [search, setSearch] = useState('');
     const [activeFilter, setActiveFilter] = useState('all');
-    const [deleteTarget, setDeleteTarget] = useState(null);
+    const [deleteTarget, setDeleteTarget] = useState<SalesPageSummary | null>(null);
 
     const filtered = pages.filter(p => {
         const matchSearch = p.title.toLowerCase().includes(search.toLowerCase());
@@ -32,14 +43,14 @@ export default function SalesPagesIndex({ pages: initialPages }) {
         });
     };
 
-    const filters = ['all', 'professional', 'casual', 'aggressive', 'luxury'];
+    const filters: string[] = ['all', 'professional', 'casual', 'aggressive', 'luxury'];
 
     return (
         <AppLayout activePage="saved">
             <div style={{ flex: 1, overflowY: 'auto', padding: 32 }}>
 
                 {/* Header */}
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 10 }}>
                     <h1 style={{ fontFamily: 'Space Grotesk, sans-serif', fontSize: 22, fontWeight: 700, color: '#F4F4F5', margin: 0, letterSpacing: '-0.3px' }}>
                         My Pages
                     </h1>
@@ -61,7 +72,7 @@ export default function SalesPagesIndex({ pages: initialPages }) {
                     <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
                         {filters.map(f => {
                             const isActive = activeFilter === f;
-                            const meta = TONE_META[f];
+                            const meta = TONE_META[f as ToneKey];
                             return (
                                 <button key={f} onClick={() => setActiveFilter(f)} style={{
                                     height: 32, padding: '0 12px', borderRadius: 6, cursor: 'pointer',
@@ -76,7 +87,7 @@ export default function SalesPagesIndex({ pages: initialPages }) {
                             );
                         })}
                     </div>
-                    <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 4, color: '#71717A', fontSize: 13, cursor: 'pointer' }}>
+                    <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 4, color: '#71717A', fontSize: 13 }}>
                         Newest <Icon name="chevron-down" size={16} color="#71717A" />
                     </div>
                 </div>
@@ -98,8 +109,8 @@ export default function SalesPagesIndex({ pages: initialPages }) {
                         )}
                     </div>
                 ) : (
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 12, marginTop: 20 }}>
-                        {filtered.map(page => (
+                    <div className="responsive-grid">
+                        {filtered.map((page: SalesPageSummary) => (
                             <PageCard key={page.id} page={page}
                                 onPreview={() => router.visit(`/pages/${page.id}`)}
                                 onRegenerate={() => router.visit(`/pages/${page.id}/edit`)}

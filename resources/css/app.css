@@ -146,3 +146,24 @@ html, body, #app { height: 100%; }
 ::-webkit-scrollbar-thumb:hover { background: #3F3F46; }
 
 @keyframes spin { to { transform: rotate(360deg); } }
+
+/* Responsive page grid — 3 cols desktop → 2 tablet → 1 mobile */
+.responsive-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    margin-top: 20px;
+}
+
+@media (max-width: 900px) {
+    .responsive-grid { grid-template-columns: repeat(2, 1fr); }
+}
+
+@media (max-width: 540px) {
+    .responsive-grid { grid-template-columns: 1fr; }
+}
+
+/* Mobile: stack sidebar below content on small screens */
+@media (max-width: 600px) {
+    .sc-page-padding { padding: 16px !important; }
+}
