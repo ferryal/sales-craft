@@ -10,10 +10,10 @@ use Illuminate\Support\Facades\Log;
 class SalesPageGeneratorService
 {
     private const MODEL_MAP = [
-        'llama-3.1-8b-instant' => ['provider' => 'groq',     'api_model' => 'llama-3.1-8b-instant'],
-        'gemini-2.5-flash'     => ['provider' => 'gemini',   'api_model' => 'gemini-2.5-flash'],
-        'deepseek-chat'        => ['provider' => 'deepseek', 'api_model' => 'deepseek-chat'],
-        'qwen-turbo'           => ['provider' => 'qwen',     'api_model' => 'qwen-turbo'],
+        'llama-3.1-8b-instant'     => ['provider' => 'groq',       'api_model' => 'llama-3.1-8b-instant'],
+        'gemini-2.5-flash'         => ['provider' => 'gemini',     'api_model' => 'gemini-2.5-flash'],
+        'openai/gpt-oss-20b:free'  => ['provider' => 'openrouter', 'api_model' => 'openai/gpt-oss-20b:free'],
+        'openai/gpt-oss-120b:free' => ['provider' => 'openrouter', 'api_model' => 'openai/gpt-oss-120b:free'],
     ];
 
     private const DEFAULT_MODEL = 'llama-3.1-8b-instant';
@@ -69,11 +69,10 @@ class SalesPageGeneratorService
         $modelDef = self::MODEL_MAP[$modelId] ?? self::MODEL_MAP[self::DEFAULT_MODEL];
 
         return match ($modelDef['provider']) {
-            'gemini'   => $this->callGemini($modelDef['api_model'], $input),
-            'groq'     => $this->callOpenAICompat('https://api.groq.com/openai/v1/chat/completions',   config('services.groq.key'),     'GROQ_API_KEY',     $modelDef['api_model'], $input),
-            'deepseek' => $this->callOpenAICompat('https://api.deepseek.com/v1/chat/completions',      config('services.deepseek.key'), 'DEEPSEEK_API_KEY', $modelDef['api_model'], $input),
-            'qwen'     => $this->callOpenAICompat('https://dashscope-intl.aliyuncs.com/compatible-mode/v1/chat/completions', config('services.qwen.key'), 'QWEN_API_KEY', $modelDef['api_model'], $input),
-            default    => throw new GenerationException("Unknown provider for model: {$modelId}"),
+            'gemini'     => $this->callGemini($modelDef['api_model'], $input),
+            'groq'       => $this->callOpenAICompat('https://api.groq.com/openai/v1/chat/completions', config('services.groq.key'), 'GROQ_API_KEY', $modelDef['api_model'], $input),
+            'openrouter' => $this->callOpenRouter($modelDef['api_model'], $input),
+            default      => throw new GenerationException("Unknown provider for model: {$modelId}"),
         };
     }
 
@@ -113,7 +112,45 @@ class SalesPageGeneratorService
         return $this->decodeJson($text);
     }
 
-    // ── OpenAI-compatible (Groq / DeepSeek / Qwen) ───────────────────────────
+    // ── OpenRouter ────────────────────────────────────────────────────────────
+
+    private function callOpenRouter(string $model, array $input): array
+    {
+        $key = config('services.openrouter.key');
+        if (empty($key)) {
+            throw new GenerationException('OpenRouter API key not configured. Set OPENROUTER_API_KEY in .env.');
+        }
+
+        $response = Http::withToken($key)
+            ->withHeaders([
+                'HTTP-Referer' => config('app.url', 'http://localhost:8000'),
+                'X-Title'      => config('app.name', 'SalesCraft AI'),
+            ])
+            ->timeout(30)
+            ->post('https://openrouter.ai/api/v1/chat/completions', [
+                'model'           => $model,
+                'messages'        => [
+                    ['role' => 'system', 'content' => $this->prompt->systemPrompt()],
+                    ['role' => 'user',   'content' => $this->prompt->userPrompt($input)],
+                ],
+                'response_format' => ['type' => 'json_object'],
+                'temperature'     => 0.7,
+                'max_tokens'      => 2000,
+            ]);
+
+        if ($response->status() === 429) {
+            throw new GenerationException('OpenRouter rate limit hit. Try a different model or wait a moment.');
+        }
+        if ($response->failed()) {
+            $error = $response->json('error.message') ?? "HTTP {$response->status()}";
+            throw new GenerationException("OpenRouter error ({$model}): {$error}");
+        }
+
+        $text = $response->json('choices.0.message.content') ?? '';
+        return $this->decodeJson($text);
+    }
+
+    // ── OpenAI-compatible (Groq) ──────────────────────────────────────────────
 
     private function callOpenAICompat(string $endpoint, ?string $key, string $envVar, string $model, array $input): array
     {

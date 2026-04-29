@@ -35,21 +35,17 @@ return [
         ],
     ],
 
-    // AI providers — free tier
+    // AI providers — all free tier
     'gemini' => [
-        'key' => env('GEMINI_API_KEY'),
+        'key' => env('GEMINI_API_KEY'),         // aistudio.google.com
     ],
 
     'groq' => [
-        'key' => env('GROQ_API_KEY'),
+        'key' => env('GROQ_API_KEY'),           // console.groq.com
     ],
 
-    'deepseek' => [
-        'key' => env('DEEPSEEK_API_KEY'),
-    ],
-
-    'qwen' => [
-        'key' => env('QWEN_API_KEY'),
+    'openrouter' => [
+        'key' => env('OPENROUTER_API_KEY'),     // openrouter.ai — single key, 30+ free models
     ],
 
 ];

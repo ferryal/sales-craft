@@ -21,7 +21,7 @@ class GenerateSalesPageRequest extends FormRequest
             'usps'        => ['nullable', 'string', 'max:1000'],
             'tone'        => ['required', 'in:professional,casual,aggressive,luxury'],
             'price'       => ['nullable', 'string', 'max:100'],
-            'model'       => ['nullable', 'string', 'in:llama-3.1-8b-instant,gemini-2.5-flash,deepseek-chat,qwen-turbo'],
+            'model'       => ['nullable', 'string', 'in:llama-3.1-8b-instant,gemini-2.5-flash,openai/gpt-oss-20b:free,openai/gpt-oss-120b:free'],
         ];
     }
 
