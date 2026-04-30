@@ -74,8 +74,22 @@ export default function SalesPagesShow({ page }: { page: SalesPage }) {
     const [device, setDevice] = useState('desktop');
     const [sidebarOpen, setSidebarOpen] = useState(true);
     const [showDelete, setShowDelete] = useState(false);
+    const [regeneratingSection, setRegeneratingSection] = useState<string | null>(null);
+    const [sectionError, setSectionError] = useState<string | null>(null);
 
     const tone = TONE_META[page.tone as keyof typeof TONE_META] || TONE_META.professional;
+
+    const handleRegenerateSection = (section: string) => {
+        setRegeneratingSection(section);
+        setSectionError(null);
+        router.post(`/pages/${page.id}/regenerate-section`, { section }, {
+            onSuccess: () => setRegeneratingSection(null),
+            onError: (errors) => {
+                setRegeneratingSection(null);
+                setSectionError((errors as Record<string, string>).regeneration ?? 'Failed to regenerate. Try again.');
+            },
+        });
+    };
 
     const handleDelete = () => {
         router.delete(`/pages/${page.id}`, { onSuccess: () => router.visit('/pages') });
@@ -123,6 +137,19 @@ export default function SalesPagesShow({ page }: { page: SalesPage }) {
 
                             <SidebarBtn icon="trash" label="Delete" danger onClick={() => setShowDelete(true)} />
                         </div>
+
+                        {sectionError && (
+                            <div style={{ marginTop: 12, padding: '8px 12px', background: '#2D0C0C', border: '1px solid #EF4444', borderRadius: 6, fontSize: 12, color: '#EF4444', lineHeight: 1.5 }}>
+                                {sectionError}
+                            </div>
+                        )}
+
+                        {!sectionError && (
+                            <div style={{ marginTop: 16, padding: '10px 12px', background: '#111311', border: '1px solid #252825', borderRadius: 6 }}>
+                                <div style={{ fontSize: 10, color: '#A3E635', textTransform: 'uppercase' as const, letterSpacing: '0.1em', marginBottom: 4 }}>Tip</div>
+                                <div style={{ fontSize: 11, color: '#71717A', lineHeight: 1.6 }}>Hover any section in the preview to regenerate it individually.</div>
+                            </div>
+                        )}
 
                         <div style={{ flex: 1 }} />
                         <button onClick={() => setSidebarOpen(false)} style={{ background: 'none', border: 'none', color: '#71717A', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 13, fontFamily: 'Inter, sans-serif', padding: 0, marginTop: 16 }}>
@@ -173,7 +200,12 @@ export default function SalesPagesShow({ page }: { page: SalesPage }) {
                     {/* Content */}
                     <div style={{ flex: 1, overflowY: 'auto', display: 'flex', justifyContent: 'center', padding: device === 'mobile' ? '24px 0' : 0, background: device === 'mobile' ? '#0D0E0D' : '#111311' }}>
                         <div style={{ width: device === 'mobile' ? 390 : '100%', maxWidth: '100%', boxShadow: device === 'mobile' ? '0 0 0 1px #252825' : 'none' }}>
-                            <SalesPagePreview data={page.output_data} template={(page.input_data?.template as string) ?? 'dark'} />
+                            <SalesPagePreview
+                                data={page.output_data}
+                                template={(page.input_data?.template as string) ?? 'dark'}
+                                onRegenerateSection={handleRegenerateSection}
+                                regeneratingSection={regeneratingSection}
+                            />
                         </div>
                     </div>
                 </div>

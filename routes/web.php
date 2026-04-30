@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\GenerateController;
+use App\Http\Controllers\RegenerateSectionController;
 use App\Http\Controllers\SalesPageController;
 use App\Http\Controllers\PreviewController;
 use Illuminate\Support\Facades\Route;
@@ -29,6 +30,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/pages/{page}/edit', [SalesPageController::class, 'edit'])->name('pages.edit');
     Route::delete('/pages/{page}',   [SalesPageController::class, 'destroy'])->name('pages.destroy');
     Route::get('/pages/{page}/export', [SalesPageController::class, 'export'])->name('pages.export');
+    Route::post('/pages/{page}/regenerate-section', RegenerateSectionController::class)->name('pages.regenerate-section');
 
     // Settings — our full SalesCraft settings page
     Route::get('/settings', fn() => inertia('settings'))->name('settings');

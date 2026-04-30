@@ -61,24 +61,35 @@ class SalesPageGeneratorService
         }
     }
 
+    public function regenerateSection(SalesPage $page, string $section): SalesPage
+    {
+        $sectionPrompt = $this->prompt->sectionPrompt($page->input_data, $section);
+        $decoded = $this->callAI($page->input_data, $sectionPrompt);
+
+        $page->update(['output_data' => array_merge($page->output_data ?? [], $decoded)]);
+
+        return $page->fresh();
+    }
+
     // ── Router ────────────────────────────────────────────────────────────────
 
-    private function callAI(array $input): array
+    private function callAI(array $input, ?string $userPromptOverride = null): array
     {
         $modelId  = $input['model'] ?? self::DEFAULT_MODEL;
         $modelDef = self::MODEL_MAP[$modelId] ?? self::MODEL_MAP[self::DEFAULT_MODEL];
+        $prompt   = $userPromptOverride ?? $this->prompt->userPrompt($input);
 
         return match ($modelDef['provider']) {
-            'gemini'     => $this->callGemini($modelDef['api_model'], $input),
-            'groq'       => $this->callOpenAICompat('https://api.groq.com/openai/v1/chat/completions', config('services.groq.key'), 'GROQ_API_KEY', $modelDef['api_model'], $input),
-            'openrouter' => $this->callOpenRouter($modelDef['api_model'], $input),
+            'gemini'     => $this->callGemini($modelDef['api_model'], $input, $prompt),
+            'groq'       => $this->callOpenAICompat('https://api.groq.com/openai/v1/chat/completions', config('services.groq.key'), 'GROQ_API_KEY', $modelDef['api_model'], $input, $prompt),
+            'openrouter' => $this->callOpenRouter($modelDef['api_model'], $input, $prompt),
             default      => throw new GenerationException("Unknown provider for model: {$modelId}"),
         };
     }
 
     // ── Google Gemini ─────────────────────────────────────────────────────────
 
-    private function callGemini(string $model, array $input): array
+    private function callGemini(string $model, array $input, string $userPrompt): array
     {
         $key = config('services.gemini.key');
         if (empty($key)) {
@@ -91,7 +102,7 @@ class SalesPageGeneratorService
                     'parts' => [['text' => $this->prompt->systemPrompt()]],
                 ],
                 'contents' => [
-                    ['parts' => [['text' => $this->prompt->userPrompt($input)]]],
+                    ['parts' => [['text' => $userPrompt]]],
                 ],
                 'generationConfig' => [
                     'responseMimeType' => 'application/json',
@@ -114,7 +125,7 @@ class SalesPageGeneratorService
 
     // ── OpenRouter ────────────────────────────────────────────────────────────
 
-    private function callOpenRouter(string $model, array $input): array
+    private function callOpenRouter(string $model, array $input, string $userPrompt): array
     {
         $key = config('services.openrouter.key');
         if (empty($key)) {
@@ -131,7 +142,7 @@ class SalesPageGeneratorService
                 'model'           => $model,
                 'messages'        => [
                     ['role' => 'system', 'content' => $this->prompt->systemPrompt()],
-                    ['role' => 'user',   'content' => $this->prompt->userPrompt($input)],
+                    ['role' => 'user',   'content' => $userPrompt],
                 ],
                 'response_format' => ['type' => 'json_object'],
                 'temperature'     => 0.7,
@@ -152,7 +163,7 @@ class SalesPageGeneratorService
 
     // ── OpenAI-compatible (Groq) ──────────────────────────────────────────────
 
-    private function callOpenAICompat(string $endpoint, ?string $key, string $envVar, string $model, array $input): array
+    private function callOpenAICompat(string $endpoint, ?string $key, string $envVar, string $model, array $input, string $userPrompt): array
     {
         if (empty($key)) {
             throw new GenerationException("API key not configured. Set {$envVar} in .env.");
@@ -164,7 +175,7 @@ class SalesPageGeneratorService
                 'model'           => $model,
                 'messages'        => [
                     ['role' => 'system', 'content' => $this->prompt->systemPrompt()],
-                    ['role' => 'user',   'content' => $this->prompt->userPrompt($input)],
+                    ['role' => 'user',   'content' => $userPrompt],
                 ],
                 'response_format' => ['type' => 'json_object'],
                 'temperature'     => 0.7,

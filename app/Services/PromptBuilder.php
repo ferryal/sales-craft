@@ -29,6 +29,41 @@ STRICT RULES — follow all of them:
 PROMPT;
     }
 
+    public function sectionPrompt(array $input, string $section): string
+    {
+        $features  = implode(', ', (array) ($input['features'] ?? []));
+        $tone      = $input['tone'] ?? 'professional';
+        $toneGuide = self::TONE_INSTRUCTIONS[$tone] ?? self::TONE_INSTRUCTIONS['professional'];
+
+        $schemas = [
+            'hero'         => '{"headline": "<specific outcome headline, max 12 words>", "sub_headline": "<who + benefit, max 20 words>"}',
+            'benefits'     => '{"description": "<benefits section heading, max 15 words>", "benefits": ["<Verb-led benefit>", "<Verb-led benefit>", "<Verb-led benefit>", "<Verb-led benefit>"]}',
+            'features'     => '{"features": [{"title": "<feature name>", "description": "<what it does + why it matters>"}, {"title": "<feature name>", "description": "<what it does + why it matters>"}, {"title": "<feature name>", "description": "<what it does + why it matters>"}]}',
+            'testimonials' => '{"testimonials": [{"name": "<Full Name>", "role": "<Job Title, Company>", "quote": "<result-driven quote with a specific number>"}, {"name": "<Full Name>", "role": "<Job Title, Company>", "quote": "<result-driven quote with a specific number>"}]}',
+            'pricing'      => '{"pricing": {"price": "<price string>", "billing": "<billing cycle>", "cta_text": "<action verb + outcome, max 5 words>", "urgency": "<one urgency line>"}}',
+            'cta'          => '{"cta": {"button_text": "<strong CTA max 5 words>", "supporting_text": "<closing headline reinforcing transformation, max 15 words>"}}',
+        ];
+
+        $schema = $schemas[$section] ?? '{}';
+        $price  = !empty($input['price']) ? "\${$input['price']}" : 'Contact for pricing';
+
+        return <<<PROMPT
+Regenerate ONLY the "{$section}" section with fresh, improved copy for this product.
+Keep the same product context. Output ONLY valid JSON — no markdown, no other keys.
+
+Product: {$input['name']}
+Description: {$input['description']}
+Features: {$features}
+Audience: {$input['audience']}
+Price: {$price}
+Tone: {$tone}
+Tone rules: {$toneGuide}
+
+Return ONLY this JSON structure:
+{$schema}
+PROMPT;
+    }
+
     public function userPrompt(array $input): string
     {
         $features  = implode(', ', (array) ($input['features'] ?? []));

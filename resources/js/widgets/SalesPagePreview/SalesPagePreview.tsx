@@ -1,3 +1,5 @@
+import { useState } from 'react';
+
 export interface SalesPageOutput {
     headline: string;
     sub_headline: string;
@@ -31,65 +33,136 @@ interface Theme {
 
 const THEMES: Record<string, Theme> = {
     dark: {
-        heroBg:       'linear-gradient(160deg,#0B1A02,#1A2E05)',
-        heroText:     '#F4F4F5',
-        heroSub:      'rgba(244,244,245,0.7)',
-        accent:       '#A3E635',
-        accentText:   '#0B0C0B',
-        accentDark:   '#84CC16',
-        sectionBg:    '#F8F8F6',
-        sectionText:  '#18181B',
-        cardBg:       '#FFFFFF',
-        cardBorder:   '#E4E4E7',
-        bodyBg:       '#FFFFFF',
-        bodyText:     '#18181B',
-        mutedText:    '#71717A',
-        darkBg:       '#0B1A02',
-        darkText:     '#F4F4F5',
-        darkCard:     '#111311',
+        heroBg:        'linear-gradient(160deg,#0B1A02,#1A2E05)',
+        heroText:      '#F4F4F5',
+        heroSub:       'rgba(244,244,245,0.7)',
+        accent:        '#A3E635',
+        accentText:    '#0B0C0B',
+        accentDark:    '#84CC16',
+        sectionBg:     '#F8F8F6',
+        sectionText:   '#18181B',
+        cardBg:        '#FFFFFF',
+        cardBorder:    '#E4E4E7',
+        bodyBg:        '#FFFFFF',
+        bodyText:      '#18181B',
+        mutedText:     '#71717A',
+        darkBg:        '#0B1A02',
+        darkText:      '#F4F4F5',
+        darkCard:      '#111311',
         darkCardBorder:'#1A2E05',
     },
     light: {
-        heroBg:       'linear-gradient(160deg,#EFF6FF,#DBEAFE)',
-        heroText:     '#18181B',
-        heroSub:      '#52525B',
-        accent:       '#3B82F6',
-        accentText:   '#FFFFFF',
-        accentDark:   '#2563EB',
-        sectionBg:    '#F8FAFC',
-        sectionText:  '#18181B',
-        cardBg:       '#FFFFFF',
-        cardBorder:   '#E2E8F0',
-        bodyBg:       '#FFFFFF',
-        bodyText:     '#18181B',
-        mutedText:    '#64748B',
-        darkBg:       '#1E3A5F',
-        darkText:     '#F0F9FF',
-        darkCard:     '#1E40AF20',
+        heroBg:        'linear-gradient(160deg,#EFF6FF,#DBEAFE)',
+        heroText:      '#18181B',
+        heroSub:       '#52525B',
+        accent:        '#3B82F6',
+        accentText:    '#FFFFFF',
+        accentDark:    '#2563EB',
+        sectionBg:     '#F8FAFC',
+        sectionText:   '#18181B',
+        cardBg:        '#FFFFFF',
+        cardBorder:    '#E2E8F0',
+        bodyBg:        '#FFFFFF',
+        bodyText:      '#18181B',
+        mutedText:     '#64748B',
+        darkBg:        '#1E3A5F',
+        darkText:      '#F0F9FF',
+        darkCard:      '#1E40AF20',
         darkCardBorder:'#3B82F640',
     },
     bold: {
-        heroBg:       '#09090B',
-        heroText:     '#FAFAFA',
-        heroSub:      '#A1A1AA',
-        accent:       '#F97316',
-        accentText:   '#09090B',
-        accentDark:   '#EA6B00',
-        sectionBg:    '#F4F4F5',
-        sectionText:  '#09090B',
-        cardBg:       '#FFFFFF',
-        cardBorder:   '#E4E4E7',
-        bodyBg:       '#FFFFFF',
-        bodyText:     '#09090B',
-        mutedText:    '#71717A',
-        darkBg:       '#09090B',
-        darkText:     '#FAFAFA',
-        darkCard:     '#18181B',
+        heroBg:        '#09090B',
+        heroText:      '#FAFAFA',
+        heroSub:       '#A1A1AA',
+        accent:        '#F97316',
+        accentText:    '#09090B',
+        accentDark:    '#EA6B00',
+        sectionBg:     '#F4F4F5',
+        sectionText:   '#09090B',
+        cardBg:        '#FFFFFF',
+        cardBorder:    '#E4E4E7',
+        bodyBg:        '#FFFFFF',
+        bodyText:      '#09090B',
+        mutedText:     '#71717A',
+        darkBg:        '#09090B',
+        darkText:      '#FAFAFA',
+        darkCard:      '#18181B',
         darkCardBorder:'#27272A',
     },
 };
 
-export default function SalesPagePreview({ data, template = 'dark' }: { data: SalesPageOutput; template?: string }) {
+function Spinner() {
+    return (
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" style={{ animation: 'spin 0.8s linear infinite' }}>
+            <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
+            <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="2.5"
+                strokeDasharray="42" strokeDashoffset="12" strokeLinecap="round" />
+        </svg>
+    );
+}
+
+function Section({ sectionKey, label, onRegenerate, regeneratingSection, children, style }: {
+    sectionKey: string;
+    label: string;
+    onRegenerate?: ((section: string) => void) | null;
+    regeneratingSection?: string | null;
+    children: React.ReactNode;
+    style?: React.CSSProperties;
+}) {
+    const [hov, setHov] = useState(false);
+    const canRegen = Boolean(onRegenerate);
+    const isRegen  = regeneratingSection === sectionKey;
+    const showOverlay = canRegen && (hov || isRegen);
+
+    return (
+        <div
+            style={{ position: 'relative', ...style }}
+            onMouseEnter={() => canRegen && setHov(true)}
+            onMouseLeave={() => setHov(false)}
+        >
+            {children}
+            {showOverlay && (
+                <div style={{
+                    position: 'absolute', inset: 0,
+                    background: isRegen ? 'rgba(0,0,0,0.72)' : 'rgba(0,0,0,0.38)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    zIndex: 10, transition: 'background 0.2s',
+                }}>
+                    {isRegen ? (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 10, color: '#A3E635', fontFamily: 'Inter, sans-serif', fontSize: 14, fontWeight: 500 }}>
+                            <Spinner />
+                            Regenerating {label}…
+                        </div>
+                    ) : (
+                        <button
+                            onClick={e => { e.stopPropagation(); onRegenerate!(sectionKey); }}
+                            style={{
+                                background: '#A3E635', border: 'none', borderRadius: 6, color: '#0B0C0B',
+                                fontWeight: 600, fontSize: 13, padding: '9px 18px', cursor: 'pointer',
+                                fontFamily: 'Inter, sans-serif', display: 'flex', alignItems: 'center', gap: 8,
+                                boxShadow: '0 4px 16px rgba(0,0,0,0.5)',
+                            }}
+                        >
+                            ↻ Regenerate {label}
+                        </button>
+                    )}
+                </div>
+            )}
+        </div>
+    );
+}
+
+export default function SalesPagePreview({
+    data,
+    template = 'dark',
+    onRegenerateSection = null,
+    regeneratingSection = null,
+}: {
+    data: SalesPageOutput;
+    template?: string;
+    onRegenerateSection?: ((section: string) => void) | null;
+    regeneratingSection?: string | null;
+}) {
     if (!data) return null;
 
     const t = THEMES[template] ?? THEMES.dark;
@@ -99,7 +172,8 @@ export default function SalesPagePreview({ data, template = 'dark' }: { data: Sa
         <div style={{ fontFamily: 'Inter, sans-serif' }}>
 
             {/* HERO */}
-            <div style={{ background: t.heroBg, padding: '96px 40px', textAlign: 'center' }}>
+            <Section sectionKey="hero" label="Hero" onRegenerate={onRegenerateSection} regeneratingSection={regeneratingSection}
+                style={{ background: t.heroBg, padding: '96px 40px', textAlign: 'center' }}>
                 <div style={{ fontSize: 10, color: t.accent, letterSpacing: '0.15em', textTransform: 'uppercase', marginBottom: 20 }}>
                     SALESCRAFT AI · GENERATED
                 </div>
@@ -116,10 +190,11 @@ export default function SalesPagePreview({ data, template = 'dark' }: { data: Sa
                     background: `linear-gradient(135deg,${t.accent},${t.accentDark})`,
                     color: t.accentText, fontWeight: 700, fontSize: 16, cursor: 'pointer',
                 }}>{cta?.button_text || 'Get Started'} →</button>
-            </div>
+            </Section>
 
             {/* BENEFITS */}
-            <div style={{ background: t.sectionBg, padding: '80px 40px', textAlign: 'center' }}>
+            <Section sectionKey="benefits" label="Benefits" onRegenerate={onRegenerateSection} regeneratingSection={regeneratingSection}
+                style={{ background: t.sectionBg, padding: '80px 40px', textAlign: 'center' }}>
                 <div style={{ fontSize: 10, color: t.mutedText, letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: 12 }}>WHY IT WORKS</div>
                 <h2 style={{ fontFamily: 'Space Grotesk, sans-serif', fontSize: 28, fontWeight: 700, color: t.sectionText, marginBottom: 40, letterSpacing: '-0.5px' }}>
                     {description}
@@ -135,10 +210,11 @@ export default function SalesPagePreview({ data, template = 'dark' }: { data: Sa
                         </div>
                     ))}
                 </div>
-            </div>
+            </Section>
 
             {/* FEATURES */}
-            <div style={{ background: t.bodyBg, padding: '80px 40px' }}>
+            <Section sectionKey="features" label="Features" onRegenerate={onRegenerateSection} regeneratingSection={regeneratingSection}
+                style={{ background: t.bodyBg, padding: '80px 40px' }}>
                 <div style={{ maxWidth: 860, margin: '0 auto', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 64, alignItems: 'center' }}>
                     <div>
                         <div style={{ fontSize: 10, color: t.accent, textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: 12 }}>Features</div>
@@ -163,10 +239,11 @@ export default function SalesPagePreview({ data, template = 'dark' }: { data: Sa
                         <span style={{ fontSize: 11, color: '#A0A0A0', fontFamily: 'monospace', letterSpacing: '0.05em' }}>product screenshot</span>
                     </div>
                 </div>
-            </div>
+            </Section>
 
             {/* TESTIMONIALS */}
-            <div style={{ background: t.darkBg, padding: '80px 40px' }}>
+            <Section sectionKey="testimonials" label="Testimonials" onRegenerate={onRegenerateSection} regeneratingSection={regeneratingSection}
+                style={{ background: t.darkBg, padding: '80px 40px' }}>
                 <div style={{ maxWidth: 860, margin: '0 auto' }}>
                     <div style={{ fontSize: 10, color: t.accent, textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: 12, textAlign: 'center' }}>What customers say</div>
                     <h2 style={{ fontFamily: 'Space Grotesk, sans-serif', fontSize: 26, fontWeight: 700, color: t.darkText, textAlign: 'center', marginBottom: 40, letterSpacing: '-0.5px' }}>
@@ -191,10 +268,11 @@ export default function SalesPagePreview({ data, template = 'dark' }: { data: Sa
                         ))}
                     </div>
                 </div>
-            </div>
+            </Section>
 
             {/* PRICING */}
-            <div style={{ background: t.sectionBg, padding: '80px 40px', textAlign: 'center' }}>
+            <Section sectionKey="pricing" label="Pricing" onRegenerate={onRegenerateSection} regeneratingSection={regeneratingSection}
+                style={{ background: t.sectionBg, padding: '80px 40px', textAlign: 'center' }}>
                 <div style={{ fontSize: 11, color: t.mutedText, textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 12 }}>Simple pricing</div>
                 <div style={{ fontFamily: 'Space Grotesk, sans-serif', fontSize: 56, fontWeight: 700, color: t.sectionText, lineHeight: 1 }}>
                     {pricing?.price || 'Contact us'}
@@ -210,10 +288,11 @@ export default function SalesPagePreview({ data, template = 'dark' }: { data: Sa
                         <span style={{ fontSize: 13, color: '#F97316' }}>⚡ {pricing.urgency}</span>
                     </div>
                 )}
-            </div>
+            </Section>
 
             {/* FOOTER CTA */}
-            <div style={{ background: t.heroBg, padding: '96px 40px', textAlign: 'center' }}>
+            <Section sectionKey="cta" label="CTA" onRegenerate={onRegenerateSection} regeneratingSection={regeneratingSection}
+                style={{ background: t.heroBg, padding: '96px 40px', textAlign: 'center' }}>
                 <h2 style={{
                     fontFamily: 'Space Grotesk, sans-serif', fontSize: 40, fontWeight: 700,
                     color: t.heroText, maxWidth: 560, margin: '0 auto 36px', lineHeight: 1.15, letterSpacing: '-0.5px',
@@ -223,7 +302,8 @@ export default function SalesPagePreview({ data, template = 'dark' }: { data: Sa
                     background: 'transparent', border: `1px solid ${t.accent}`,
                     color: t.accent, fontWeight: 600, fontSize: 15, cursor: 'pointer',
                 }}>{cta?.button_text || 'Get Started'}</button>
-            </div>
+            </Section>
+
         </div>
     );
 }
