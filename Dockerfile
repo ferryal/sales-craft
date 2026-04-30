@@ -51,4 +51,4 @@ RUN mkdir -p storage/framework/{sessions,views,cache,testing} storage/logs boots
 
 EXPOSE 8080
 
-CMD ["sh", "-c", "php -S 0.0.0.0:${PORT:-8080} -t public/"]
+CMD ["sh", "-c", "echo '=== config:cache ===' && php artisan config:cache && echo '=== migrate ===' && php artisan migrate --force && echo '=== starting server on port '${PORT:-8080}' ===' && php -S 0.0.0.0:${PORT:-8080} -t public/"]
