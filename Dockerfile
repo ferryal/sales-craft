@@ -51,4 +51,4 @@ RUN mkdir -p storage/framework/{sessions,views,cache,testing} storage/logs boots
 
 EXPOSE 8080
 
-CMD ["sh", "-c", "php -S 0.0.0.0:${PORT:-8080} server.php"]
+CMD ["sh", "-c", "php artisan migrate --force 2>&1 || true && php -S 0.0.0.0:${PORT:-8080} server.php"]
