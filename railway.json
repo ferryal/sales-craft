@@ -6,7 +6,6 @@
   },
   "deploy": {
     "preDeployCommand": "php artisan config:cache && php artisan migrate --force",
-    "startCommand": "php -S 0.0.0.0:$PORT -t public/",
     "healthcheckPath": "/up",
     "healthcheckTimeout": 60,
     "restartPolicyType": "ON_FAILURE",
