@@ -51,4 +51,4 @@ RUN mkdir -p storage/framework/{sessions,views,cache,testing} storage/logs boots
 
 EXPOSE 8080
 
-CMD ["php", "-S", "0.0.0.0:8080", "-t", "public/", "-d", "display_errors=1", "-d", "log_errors=1"]
+CMD ["sh", "-c", "php -S 0.0.0.0:${PORT:-8080} server.php"]
