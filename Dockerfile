@@ -51,6 +51,4 @@ RUN mkdir -p storage/framework/{sessions,views,cache,testing} storage/logs boots
 
 EXPOSE 8080
 
-COPY start.sh /start.sh
-RUN chmod +x /start.sh
-CMD ["/start.sh"]
+CMD ["php", "-S", "0.0.0.0:8080", "-t", "public/"]
