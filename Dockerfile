@@ -51,5 +51,5 @@ RUN mkdir -p storage/framework/{sessions,views,cache,testing} storage/logs boots
 
 EXPOSE 8080
 
-# config:cache + migrate run at startup so Railway env vars are available
-CMD sh -c "php artisan config:cache && php artisan migrate --force && php artisan serve --host=0.0.0.0 --port=${PORT:-8080}"
+ENV PORT=8080
+CMD ["php", "artisan", "serve", "--host=0.0.0.0", "--port=8080"]
