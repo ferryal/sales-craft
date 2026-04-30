@@ -5,7 +5,6 @@
     "dockerfilePath": "Dockerfile"
   },
   "deploy": {
-    "preDeployCommand": "php artisan config:cache",
     "healthcheckPath": "/up",
     "healthcheckTimeout": 120,
     "restartPolicyType": "ON_FAILURE",
